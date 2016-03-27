@@ -17,3 +17,9 @@ gen### Java template
 hs_err_pid*
 
 # Created by .ignore support plugin (hsz.mobi)
+.gradle
+spigot-plugin-plugin.ipr
+spigot-plugin-plugin.iws
+build
+testserver
+gradle
