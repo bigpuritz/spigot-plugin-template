@@ -1,0 +1,108 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath group: 'eu.appsatori', name: 'gradle-fatjar-plugin', version: '0.3'
+        classpath group: 'com.github.rodionmoiseev.gradle.plugins', name: 'idea-utils', version: '0.2'
+        classpath group: 'de.undercouch', name: 'gradle-download-task', version: '2.1.0'
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'eu.appsatori.fatjar'
+apply plugin: 'de.undercouch.download'
+
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'idea-utils'
+
+idea {
+    project {
+        ipr {
+            withXml { xmlProvider ->
+                def project = xmlProvider.asNode()
+                def runConfigs = new XmlParser().parse(new File("config/intellij_runconfigs.txt"))
+                project.append(runConfigs)
+            }
+        }
+    }
+}
+
+repositories {
+    jcenter()
+    maven {
+        url "https://hub.spigotmc.org/nexus/content/repositories/snapshots"
+    }
+    maven {
+        url "https://oss.sonatype.org/content/groups/public"
+    }
+    ivy {
+        url "http://getspigot.org/jenkins/job/Spigot/lastSuccessfulBuild/artifact"
+        layout 'pattern', {
+            ivy '[module]-ivy.xml'
+            artifact '[module]-[revision].[ext]'
+        }
+    }
+}
+
+group = "net.javaforge.minecraft.spigot"
+version = project.property("version")
+sourceCompatibility = 1.8
+
+
+dependencies {
+    compile "org.spigotmc:spigot-api:1.9-R0.1-SNAPSHOT", {
+        ext { fatJarExclude = true }
+    }
+    compile ':spigot:1.9', {
+        ext { fatJarExclude = true }
+    }
+
+    compile 'com.google.guava:guava:19.0'
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.12'
+}
+
+processResources {
+    filter ReplaceTokens, tokens: [
+            "version": project.property("version")
+    ]
+}
+
+
+clean {
+    delete "testserver/"
+}
+
+task setupDevServer(type: Copy) {
+    from 'config/serverfiles'
+    into 'testserver'
+}
+
+task cleanPlugins() {
+    delete "testserver/plugins"
+}
+
+task copyPluginToTestserver(dependsOn: ['build'], type: Copy) {
+    from "${buildDir}/libs"
+    into "testserver/plugins"
+}
+
+task startDevServer(dependsOn: ['cleanPlugins', 'copyPluginToTestserver', 'setupDevServer'], type: JavaExec) {
+    classpath configurations.compile
+    main = "org.bukkit.craftbukkit.Main"
+    workingDir = "testserver/"
+    standardInput = System.in
+}
+
+jar {
+    actions = []
+    dependsOn = []
+    dependsOn('fatJar')
+}
