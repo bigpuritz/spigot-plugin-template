@@ -5,9 +5,6 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-/**
- * Created by mk on 26.03.16.
- */
 public class TeleportCommand implements CommandExecutor {
 
 
